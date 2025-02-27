@@ -11,10 +11,10 @@ const userRoutes = require("./routes/user");
 
 const app = express();
 const pool = new Pool({
-    user: "postgres",
-    host: "localhost",
-    database: "useradmin",
-    password: "root",
+    user: "postgres1",
+    host: "dpg-cv036nbtq21c7390l680-a",
+    database: "useradmin_25pe",
+    password: "Aolelw398ME0zeXvO1xQBkZX38mrmup5",
     port: 5432,
 });
 
