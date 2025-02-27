@@ -21,7 +21,11 @@ const pool = new Pool({
 });
 
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://dashboard-frontend-navy.vercel.app', // Allow only this origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow only certain HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
+}));
 app.use(express.json());
 app.use("/admin", adminRoutes); // Ensure this is correct
 app.use("/user", userRoutes);
