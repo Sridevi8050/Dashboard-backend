@@ -15,7 +15,11 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false,
   },
+  max: 20, // You can adjust the max number of connections if needed
+  idleTimeoutMillis: 30000, // Timeout after 30 seconds if no activity
+  connectionTimeoutMillis: 2000, // Timeout after 2 seconds if unable to connect
 });
+
 
 app.use(cors());
 app.use(express.json());
