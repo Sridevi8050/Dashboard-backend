@@ -4,7 +4,6 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
-// const pool = require("./db");
 const adminRoutes = require("./routes/admin");  // Ensure this line is present
 const userRoutes = require("./routes/user");
 
@@ -18,7 +17,7 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(express.json());
-app.use("/admin", adminRoutes); // Ensure this is correct
+app.use("/admin", adminRoutes); // This ensures the admin routes are correctly prefixed
 app.use("/user", userRoutes);
 
 const generateToken = (user) => {
@@ -53,26 +52,24 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: "All fields are required" });
-  }
-  try {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: "Invalid email or password" });
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
     }
-    const user = result.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Invalid email or password" });
+    try {
+      const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+      if (result.rows.length === 0) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      const user = result.rows[0];
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      res.status(200).json({ message: "Login successful", user });
+    } catch (err) {
+      res.status(500).json({ error: "Internal Server Error" });
     }
-    // Generate JWT token
-    const token = generateToken(user);
-    res.status(200).json({ message: "Login successful", token, user });
-  } catch (err) {
-    res.status(500).json({ error: "Internal Server Error" });
-  }
 });
 
 // Middleware to verify JWT and role
@@ -89,47 +86,7 @@ const authenticate = (req, res, next) => {
 };
 
 // Admin CRUD operations
-app.post("/admin/data", authenticate, async (req, res) => {
-  if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
-  const { title, description } = req.body;
-  try {
-    const result = await pool.query("INSERT INTO data (title, description) VALUES ($1, $2) RETURNING *", [title, description]);
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get("/admin/data", authenticate, async (req, res) => {
-  if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
-  try {
-    const result = await pool.query("SELECT * FROM data");
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put("/admin/data/:id", authenticate, async (req, res) => {
-  if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
-  const { title, description } = req.body;
-  try {
-    const result = await pool.query("UPDATE data SET title = $1, description = $2 WHERE id = $3 RETURNING *", [title, description, req.params.id]);
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete("/admin/data/:id", authenticate, async (req, res) => {
-  if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
-  try {
-    await pool.query("DELETE FROM data WHERE id = $1", [req.params.id]);
-    res.json({ message: "Deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.use("/admin", authenticate, adminRoutes);  // Ensures all /admin routes are prefixed with authenticate
 
 // User data retrieval
 app.get("/user/data", authenticate, async (req, res) => {
