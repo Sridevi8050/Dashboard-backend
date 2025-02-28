@@ -53,24 +53,26 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Invalid email or password" });
     }
-    try {
-      const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-      if (result.rows.length === 0) {
-        return res.status(401).json({ error: "Invalid email or password" });
-      }
-      const user = result.rows[0];
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(401).json({ error: "Invalid email or password" });
-      }
-      res.status(200).json({ message: "Login successful", user });
-    } catch (err) {
-      res.status(500).json({ error: "Internal Server Error" });
+    const user = result.rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid email or password" });
     }
+    // Generate JWT token
+    const token = generateToken(user);
+    res.status(200).json({ message: "Login successful", token, user });
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // Middleware to verify JWT and role
