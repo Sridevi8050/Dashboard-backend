@@ -87,11 +87,15 @@ app.post("/login", async (req, res) => {
 
 // Middleware to verify JWT and role
 const authenticate = (req, res, next) => {
-  const token = req.headers.authorization;
-  if (!token) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
     console.log("No token provided");
     return res.status(403).json({ error: "Access denied" });
   }
+  
+  // Extract the token from the Authorization header
+  const token = authHeader.startsWith('Bearer ') ? 
+    authHeader.substring(7, authHeader.length) : authHeader;
   
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret_fallback");
